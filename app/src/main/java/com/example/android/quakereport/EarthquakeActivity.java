@@ -15,12 +15,19 @@
  */
 package com.example.android.quakereport;
 
+import android.app.SearchManager;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import java.util.ArrayList;
+
+import static android.media.CamcorderProfile.get;
 
 public class EarthquakeActivity extends AppCompatActivity {
 
@@ -44,16 +51,48 @@ public class EarthquakeActivity extends AppCompatActivity {
          */
 
         //create a new list of earthquakes with JSON parsing
-        ArrayList<Earthquake> earthquakes = QueryUtils.extractEarthquakes();
+        final ArrayList<Earthquake> earthquakes = QueryUtils.extractEarthquakes();
 
         // Find a reference to the {@link ListView} in the layout
-        ListView earthquakeListView = (ListView) findViewById(R.id.list);
+        final ListView earthquakeListView = (ListView) findViewById(R.id.list);
 
         // Create a new {@link ArrayAdapter} of earthquakes
-        EarthquakeAdapter adapter = new EarthquakeAdapter(this, earthquakes);
+        final EarthquakeAdapter adapter = new EarthquakeAdapter(this, earthquakes);
 
         // Set the adapter on the {@link ListView}
         // so the list can be populated in the user interface
         earthquakeListView.setAdapter(adapter);
+
+
+        //add click listener for each list item so that the app
+        //will send user to the USGS website to see additional information
+        earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                /**
+                 *
+                 * //ANOTHER WAY TO TO THIS
+                String earthquakesDetailsURL =  earthquakes.get(position).getURL();
+                Intent startWebBrowser = new Intent(Intent.ACTION_WEB_SEARCH);
+                startWebBrowser.putExtra(SearchManager.QUERY,earthquakesDetailsURL);
+                if(startWebBrowser.resolveActivity(getPackageManager()) != null)
+                    startActivity(startWebBrowser);
+                 */
+
+                //Find the current earthquake that was clicked on
+                Earthquake currentEarthquake = adapter.getItem(position);
+
+                //Convert the String URL into a URI object
+                Uri earthquakeUri = Uri.parse(currentEarthquake.getURL());
+
+                //create a new intent to view the earthquake URI
+                Intent websiteIntent = new Intent(Intent.ACTION_VIEW, earthquakeUri);
+
+                startActivity(websiteIntent);
+
+
+            }
+        });
     }
 }
