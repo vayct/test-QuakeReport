@@ -18,6 +18,7 @@ package com.example.android.quakereport;
 import android.app.SearchManager;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -26,42 +27,36 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static android.media.CamcorderProfile.get;
+import static com.example.android.quakereport.QueryUtils.fetchEarthquakeData;
 
 public class EarthquakeActivity extends AppCompatActivity {
 
     public static final String LOG_TAG = EarthquakeActivity.class.getName();
+
+    private static final String USGS_QUERY_URL = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake&orderby=time&minmag=6&limit=10";
+
+    private EarthquakeAdapter mAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.earthquake_activity);
 
-        // Create a fake list of earthquake locations.
-        /**
-        ArrayList<Earthquake> earthquakes = new ArrayList<>();
-        earthquakes.add(new Earthquake("7.2", "San Francisco", "Feb 2, 2016"));
-        earthquakes.add(new Earthquake("6.1","London", "July 20, 2015"));
-        earthquakes.add(new Earthquake("3.9","Tokyo", "Nov 10, 2014"));
-        earthquakes.add(new Earthquake("5.4","Mexico City", "May 3, 2014"));
-        earthquakes.add(new Earthquake("2.8","Moscow","Jan 31, 2013"));
-        earthquakes.add(new Earthquake("4.9","Rio de Janeiro", "Aug 19, 2012"));
-        earthquakes.add(new Earthquake("1.6","Paris", "Oct 30, 2011"));
-         */
+        EarthquakeAsyncTask getQueryThread = new EarthquakeAsyncTask();
+        getQueryThread.execute(USGS_QUERY_URL);
 
-        //create a new list of earthquakes with JSON parsing
-        final ArrayList<Earthquake> earthquakes = QueryUtils.extractEarthquakes();
 
-        // Find a reference to the {@link ListView} in the layout
-        final ListView earthquakeListView = (ListView) findViewById(R.id.list);
+        ListView earthquakeListView = (ListView) findViewById(R.id.list);
 
         // Create a new {@link ArrayAdapter} of earthquakes
-        final EarthquakeAdapter adapter = new EarthquakeAdapter(this, earthquakes);
+        mAdapter = new EarthquakeAdapter(this, new ArrayList<Earthquake>());
 
         // Set the adapter on the {@link ListView}
         // so the list can be populated in the user interface
-        earthquakeListView.setAdapter(adapter);
+        earthquakeListView.setAdapter(mAdapter);
 
 
         //add click listener for each list item so that the app
@@ -70,18 +65,9 @@ public class EarthquakeActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-                /**
-                 *
-                 * //ANOTHER WAY TO TO THIS
-                String earthquakesDetailsURL =  earthquakes.get(position).getURL();
-                Intent startWebBrowser = new Intent(Intent.ACTION_WEB_SEARCH);
-                startWebBrowser.putExtra(SearchManager.QUERY,earthquakesDetailsURL);
-                if(startWebBrowser.resolveActivity(getPackageManager()) != null)
-                    startActivity(startWebBrowser);
-                 */
 
                 //Find the current earthquake that was clicked on
-                Earthquake currentEarthquake = adapter.getItem(position);
+                Earthquake currentEarthquake = mAdapter.getItem(position);
 
                 //Convert the String URL into a URI object
                 Uri earthquakeUri = Uri.parse(currentEarthquake.getURL());
@@ -94,5 +80,43 @@ public class EarthquakeActivity extends AppCompatActivity {
 
             }
         });
+
+
+    }
+
+
+    private class EarthquakeAsyncTask extends AsyncTask<String, Void, List<Earthquake>> {
+
+        //Perform the HTTP request for earthquake data and process the response
+        @Override
+        protected List<Earthquake> doInBackground(String... strings) {
+            //Don't perform the request if the input is invalid
+            if ((strings.length == 0) || (strings[0] == null))
+                return null;
+            else {
+
+                //create a new list of earthquakes with JSON parsing
+                return QueryUtils.fetchEarthquakeData(strings[0]);
+            }
+
+
+        }
+
+
+        // Update the information displayed to the user.
+        @Override
+        protected void onPostExecute(List<Earthquake> results) {
+
+            //clear the adapter of previous earthquake data
+            mAdapter.clear();
+
+            //If there is a valid list of Earthquakes, add them to adapters
+            //Make sure that the result is not null
+            if ((results != null) && (!results.isEmpty())) {
+                mAdapter.addAll(results);
+
+
+            }
+        }
     }
 }
