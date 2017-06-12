@@ -15,14 +15,9 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 
 import static com.example.android.quakereport.EarthquakeActivity.LOG_TAG;
-import static com.example.android.quakereport.R.id.date;
-import static com.example.android.quakereport.R.id.magnitude;
-import static java.lang.Long.parseLong;
 
 /**
  * Helper methods related to requesting and receiving earthquake data from USGS.
@@ -56,6 +51,8 @@ public final class QueryUtils {
      * Query the USGS dataset and return a list of earthquakes.
      */
     public static ArrayList<Earthquake> fetchEarthquakeData(String requestUrl) {
+
+
         // Create URL object
         URL url = createUrl(requestUrl);
 
